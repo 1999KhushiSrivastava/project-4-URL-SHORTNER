@@ -42,8 +42,10 @@ const createUrl = async function (req, res) {
             return res.status(400).send({ status: false, message: "please enter valid URL" })
         }
         let cachedUrl = await GET_ASYNC(longUrl)
+        
         if(cachedUrl){
-            cachedUrl = JSON.parse(cachedUrl)
+           let cachedUrl = JSON.parse(JSON.stringify(cachedUrl))
+            
             return res.status(200).send({status:true,message:"this url has already been shortend",data:cachedUrl})
         }
 
@@ -51,7 +53,7 @@ const createUrl = async function (req, res) {
         if (checkUrl) {
             return res.status(200).send({ status: true, message: "this url has already been shortend",data:checkUrl })
         }
-        const urlCode = shortId.generate()
+        const urlCode = shortId.generate().toLowerCase()
         let baseUrl = "http://localhost:3000";
 
         const shortUrl = baseUrl + '/' + urlCode;
@@ -81,11 +83,10 @@ const getUrl = async function (req, res) {
         if(!shortId.isValid(urlCode)){
             return res.status(400).send({status:false, message:"enter valid code"})
         }
-        let cachedUrl = await GET_ASYNC(urlCode)
-        //console.log(cachedUrl)
+        let cachedUrl = await GET_ASYNC(`${urlCode}`)
         if(cachedUrl){
             cachedUrl = JSON.parse(cachedUrl)
-            return res.status(307).redirect(cachedUrl.longUrl)
+            return res.status(302).redirect(cachedUrl.longUrl)
         }
         else{
             let result = await urlModel.findOne({ urlCode }).select({ longUrl: 1 , shortUrl:1  , urlCode:1 , _id:0})
@@ -93,9 +94,9 @@ const getUrl = async function (req, res) {
                 return res.status(404).send({staus:false,message:"no url exists"})
             }
             let longUrl = result.longUrl
-            await SET_ASYNC(longUrl,JSON.stringify(result)) //key
-             await SET_ASYNC(urlCode,JSON.stringify(result)) //key
-            return res.status(307).redirect(longUrl)
+            await SET_ASYNC(`${longUrl}`,JSON.stringify(`${result}`)) //key
+            await SET_ASYNC(`${urlCode}`,JSON.stringify(`${result}`)) //key
+            return res.status(302).redirect(longUrl)
             
             }
 
@@ -103,6 +104,7 @@ const getUrl = async function (req, res) {
         return res.status(500).send({ staus: false, error: err.message })
     }
 }
+
 
 module.exports.getUrl = getUrl
 module.exports.createUrl = createUrl
